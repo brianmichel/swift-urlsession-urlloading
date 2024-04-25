@@ -10,11 +10,13 @@ final class TestURLProtocol: URLProtocol {
     static var canInitTask: (() -> Void)?
 
     override class func canInit(with request: URLRequest) -> Bool {
+        print(">>>> canInitRequest: \(String(describing: request.url))")
         canInitRequest?()
         return true
     }
 
     override class func canInit(with task: URLSessionTask) -> Bool {
+        print(">>>> canInitTask: \(String(describing: task.originalRequest?.url))")
         canInitTask?()
         return true
     }
@@ -42,21 +44,17 @@ final class swift_urlsession_urlloadingTests: XCTestCase {
         TestURLProtocol.canInitTask = nil
 
         URLProtocol.unregisterClass(TestURLProtocol.self)
-
-        print("Cleaning up!")
     }
 
     func testProtocolIsCalled_defaultSession() throws {
-        let request = URLRequest(url: try XCTUnwrap(URL(string: "https://arc.net")))
+        let request = URLRequest(url: try XCTUnwrap(URL(string: "https://default-session.net")))
         let task = URLSession.shared.dataTask(with: request)
 
-        let expectation = expectation(description: "did call protocol init")
+        let expectation = expectation(description: "defaultSession")
         expectation.assertForOverFulfill = false
 
         let callback = {
-            DispatchQueue.main.sync {
-                expectation.fulfill()
-            }
+            expectation.fulfillOnMainThread()
         }
 
         TestURLProtocol.canInitRequest = callback
@@ -67,17 +65,15 @@ final class swift_urlsession_urlloadingTests: XCTestCase {
     }
 
     func testProtocolIsCalled_nonDefaultSession_defaultConfiguration() throws {
-        let request = URLRequest(url: try XCTUnwrap(URL(string: "https://arc.net")))
+        let request = URLRequest(url: try XCTUnwrap(URL(string: "https://non-default-session-default-configuration.net")))
         let configuration = URLSessionConfiguration.default
         let task = URLSession(configuration: configuration).dataTask(with: request)
 
-        let expectation = expectation(description: "did call protocol init")
+        let expectation = expectation(description: "defaultSession - ephemeral configuration expectation")
         expectation.assertForOverFulfill = false
 
         let callback = {
-            DispatchQueue.main.sync {
-                expectation.fulfill()
-            }
+            expectation.fulfillOnMainThread()
         }
 
         TestURLProtocol.canInitRequest = callback
@@ -88,17 +84,15 @@ final class swift_urlsession_urlloadingTests: XCTestCase {
     }
 
     func testProtocolIsCalled_nonDefaultSession_ephemeralConfiguration() throws {
-        let request = URLRequest(url: try XCTUnwrap(URL(string: "https://arc.net")))
+        let request = URLRequest(url: try XCTUnwrap(URL(string: "https://non-default-session-ephemeral-configuration.net")))
         let configuration = URLSessionConfiguration.ephemeral
         let task = URLSession(configuration: configuration).dataTask(with: request)
 
-        let expectation = expectation(description: "did call protocol init")
+        let expectation = expectation(description: "nonDefaultSession - ephemeral configuration expectation")
         expectation.assertForOverFulfill = false
 
         let callback = {
-            DispatchQueue.main.sync {
-                expectation.fulfill()
-            }
+            expectation.fulfillOnMainThread()
         }
 
         TestURLProtocol.canInitRequest = callback
@@ -106,5 +100,17 @@ final class swift_urlsession_urlloadingTests: XCTestCase {
         task.resume()
 
         wait(for: [expectation], timeout: 0.5)
+    }
+}
+
+extension XCTestExpectation {
+    func fulfillOnMainThread() {
+        if Thread.isMainThread {
+            fulfill()
+        } else {
+            DispatchQueue.main.async { [weak self] in
+                self?.fulfill()
+            }
+        }
     }
 }
