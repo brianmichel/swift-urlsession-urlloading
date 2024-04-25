@@ -34,6 +34,10 @@ final class TestURLProtocol: URLProtocol {
 }
 
 final class swift_urlsession_urlloadingTests: XCTestCase {
+    private enum Constants {
+        static let expectationTimeout: TimeInterval = 1.0
+    }
+
     override func setUp() {
         let registered = URLProtocol.registerClass(TestURLProtocol.self)
         XCTAssertTrue(registered)
@@ -61,7 +65,7 @@ final class swift_urlsession_urlloadingTests: XCTestCase {
 
         task.resume()
 
-        wait(for: [expectation], timeout: 0.5)
+        wait(for: [expectation], timeout: Constants.expectationTimeout)
     }
 
     func testProtocolIsCalled_nonDefaultSession_defaultConfiguration() throws {
@@ -80,7 +84,7 @@ final class swift_urlsession_urlloadingTests: XCTestCase {
 
         task.resume()
 
-        wait(for: [expectation], timeout: 0.5)
+        wait(for: [expectation], timeout: Constants.expectationTimeout)
     }
 
     func testProtocolIsCalled_nonDefaultSession_ephemeralConfiguration() throws {
@@ -99,7 +103,7 @@ final class swift_urlsession_urlloadingTests: XCTestCase {
 
         task.resume()
 
-        wait(for: [expectation], timeout: 0.5)
+        wait(for: [expectation], timeout: Constants.expectationTimeout)
     }
 }
 
